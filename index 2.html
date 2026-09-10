@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>防災・情報ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=M+PLUS+Rounded+1c:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:#090d12;color:#f1f5fa;font-family:Arial,"Helvetica Neue","Noto Sans JP",sans-serif}
+*{box-sizing:border-box}
+body{min-width:900px}
+
+.dashboard{
+position:relative;
+width:100%;
+height:100%;
+padding:12px;
+background:radial-gradient(circle at 50% 0%,rgba(55,75,100,.10),transparent 45%);
+background-color:#090d12
+}
+
+.card{
+position:absolute;
+overflow:hidden;
+border:1px solid #28313d;
+border-radius:16px;
+background:#151b23
+}
+
+/* 時計(プレビュー版デザイン移植) */
+.clock-card{
+left:12px;
+top:12px;
+width:67%;
+height:55%;
+padding:18px;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+background:radial-gradient(circle at 50% 40%,#232323 0%,#111 70%)
+}
+
+.clock-time{
+display:grid;
+grid-auto-flow:column;
+justify-content:center;
+align-items:baseline;
+column-gap:10px;
+line-height:.82;
+user-select:none
+}
+
+.clock-hours,
+.clock-minutes,
+.clock-seconds{
+display:inline-block;
+width:2ch;
+text-align:center;
+font-family:"Fredoka","M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+font-weight:500;
+letter-spacing:-2px;
+font-size:130px
+}
+
+.clock-colon{
+display:inline-block;
+width:.6ch;
+text-align:center;
+font-family:"Fredoka","M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+font-weight:500;
+color:#fff;
+font-size:130px
+}
+
+.clock-hours{
+color:#ff493f;
+text-shadow:0 0 18px rgba(255,73,63,.10)
+}
+
+.clock-minutes{
+color:#aeeeff;
+text-shadow:0 0 18px rgba(174,238,255,.10)
+}
+
+.clock-seconds{
+color:#e8faff;
+text-shadow:0 0 18px rgba(232,250,255,.10)
+}
+
+.clock-date{
+margin-top:22px;
+text-align:center;
+font-size:18px;
+font-weight:400;
+color:rgba(255,255,255,.6)
+}
+
+/* 天気 */
+.weather-card{
+right:12px;
+top:12px;
+width:31%;
+height:55%;
+padding:16px 16px 14px;
+display:flex;
+flex-direction:column;
+background:linear-gradient(165deg,#6fb1f0 0%,#3a7fd6 55%,#2e63b0 100%);
+border-color:rgba(255,255,255,.12);
+transition:background .6s ease
+}
+
+.weather-top-row{
+display:flex;
+align-items:flex-start;
+justify-content:space-between
+}
+
+.weather-top-left{
+display:flex;
+flex-direction:column;
+gap:2px
+}
+
+.weather-location{
+font-size:18px;
+font-weight:500;
+letter-spacing:.2px
+}
+
+.weather-condition-small{
+font-size:13px;
+font-weight:400;
+color:rgba(255,255,255,.85)
+}
+
+.weather-stats{
+display:flex;
+flex-direction:column;
+align-items:flex-end;
+gap:1px;
+text-align:right;
+font-size:11px;
+color:rgba(255,255,255,.85);
+line-height:1.5
+}
+
+.weather-stats span.dim{
+color:rgba(255,255,255,.6)
+}
+
+.weather-middle{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:2px;
+margin:0 0 4px
+}
+
+.weather-icon-wrap{
+width:60px;
+height:60px;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-shrink:0;
+margin-top:-6px
+}
+
+.weather-icon-wrap svg{
+width:100%;
+height:100%
+}
+
+.weather-temp{
+font-size:46px;
+font-weight:300;
+letter-spacing:-2px;
+line-height:1
+}
+
+.weather-updated{
+font-size:10px;
+color:rgba(255,255,255,.55);
+text-align:right;
+margin-top:4px
+}
+
+/* これからの天気(縦に大きく・1段) */
+.hourly{
+flex:1 1 auto;
+display:flex;
+align-items:stretch;
+justify-content:space-between;
+gap:3px;
+margin-top:4px;
+padding:10px 4px;
+background:rgba(4,39,75,.28);
+border-radius:14px
+}
+
+.hour{
+flex:1 1 0;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:space-around;
+text-align:center;
+min-width:0
+}
+
+.hour-time{
+font-size:14px;
+color:rgba(255,255,255,.85)
+}
+
+.hour-icon{
+width:34px;
+height:34px
+}
+
+.hour-icon svg{
+display:block;
+width:100%;
+height:100%
+}
+
+.hour-temp{
+font-size:20px;
+font-weight:700
+}
+
+.hour-rain{
+font-size:12px;
+color:rgba(255,255,255,.75)
+}
+
+.weather-error{
+font-size:11px;
+color:#ffdca8;
+background:rgba(0,0,0,.3);
+border-radius:10px;
+padding:6px 8px;
+line-height:1.4;
+display:none
+}
+
+.weather-error.show{
+display:block
+}
+
+/* ニュース */
+.news-card{
+left:12px;
+right:12px;
+bottom:12px;
+height:40%;
+padding:14px 18px;
+background-image:linear-gradient(rgba(10,15,19,.57),rgba(10,15,19,.67)),url("IMG_2219.jpeg");
+background-size:cover;
+background-position:center;
+background-repeat:no-repeat;
+border-color:#28313d
+}
+
+.news-title{
+height:30px;
+line-height:30px;
+white-space:nowrap;
+font-size:18px;
+font-weight:700;
+text-shadow:0 1px 3px rgba(0,0,0,.7)
+}
+
+.nhk-badge{
+display:inline-block;
+vertical-align:middle;
+height:23px;
+line-height:23px;
+padding:0 8px;
+margin-right:8px;
+background:#087dcc;
+color:#fff;
+border-radius:4px;
+font-size:11px;
+font-weight:800
+}
+
+.news-status{
+float:right;
+color:#e1e6eb;
+font-size:11px
+}
+
+.news-view{
+position:absolute;
+left:18px;
+right:18px;
+top:51px;
+bottom:12px;
+overflow:hidden
+}
+
+.news-track{
+width:100%;
+height:100%;
+white-space:nowrap;
+transition:transform .7s ease
+}
+
+.news-item{
+display:inline-block;
+vertical-align:top;
+width:100%;
+height:100%;
+padding:10px 0;
+border-top:1px solid rgba(255,255,255,.22);
+overflow:hidden;
+white-space:normal;
+position:relative
+}
+
+.news-item a{
+display:block;
+width:100%;
+height:100%;
+color:inherit;
+text-decoration:none
+}
+
+.news-item-title{
+width:100%;
+height:82px;
+overflow:hidden;
+font-size:30px;
+line-height:1.28;
+font-weight:700;
+color:#fff;
+text-shadow:0 2px 5px rgba(0,0,0,.9)
+}
+
+.news-description{
+margin-top:10px;
+width:100%;
+height:72px;
+overflow:hidden;
+color:#f0f3f5;
+font-size:20px;
+line-height:1.45;
+text-shadow:0 2px 4px rgba(0,0,0,.95)
+}
+
+.news-time{
+margin-top:8px;
+color:#e2e7eb;
+font-size:12px;
+text-shadow:0 1px 3px rgba(0,0,0,.9)
+}
+
+.news-progress{
+position:absolute;
+left:50%;
+bottom:3px;
+margin-left:-50px;
+width:100px;
+height:10px;
+text-align:center;
+white-space:nowrap;
+z-index:20
+}
+
+.news-dot{
+display:inline-block;
+width:7px;
+height:7px;
+margin:0 3px;
+border-radius:50%;
+background:#566170
+}
+
+.news-dot.active{
+background:#fff;
+transform:scale(1.25)
+}
+
+svg{display:block}
+
+@media screen and (max-width:1100px){
+
+.news-item-title{
+font-size:26px
+}
+
+.news-description{
+font-size:18px
+}
+
+.news-item{
+padding-right:0
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<section class="card clock-card">
+
+<div class="clock-time">
+
+<div class="clock-hours" id="clockHours">--</div>
+
+<div class="clock-colon">:</div>
+
+<div class="clock-minutes" id="clockMinutes">--</div>
+
+<div class="clock-colon">:</div>
+
+<div class="clock-seconds" id="clockSeconds">--</div>
+
+</div>
+
+<div class="clock-date" id="clockDate">
+----年--月--日(-)
+</div>
+
+</section>
+
+
+<section class="card weather-card" id="weatherPanel">
+
+<div class="weather-top-row">
+
+<div class="weather-top-left">
+
+<div class="weather-location">
+交野市
+</div>
+
+<div class="weather-condition-small" id="weatherConditionSmall">
+読み込み中…
+</div>
+
+</div>
+
+
+<div class="weather-stats">
+
+<div>
+<span class="dim">最高</span>
+<span id="weatherHigh">--°</span>
+</div>
+
+<div>
+<span class="dim">湿度</span>
+<span id="weatherHumidity">--%</span>
+</div>
+
+<div>
+<span class="dim">最低</span>
+<span id="weatherLow">--°</span>
+</div>
+
+<div>
+<span class="dim">体感</span>
+<span id="weatherFeels">--°</span>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="weather-middle">
+
+<div class="weather-icon-wrap" id="weatherIconWrap"></div>
+
+<div class="weather-temp" id="weatherTemp">
+--°
+</div>
+
+</div>
+
+
+<div class="weather-error" id="weatherError"></div>
+
+<div class="weather-updated" id="weatherUpdated"></div>
+
+<div class="hourly" id="hourlyWeather"></div>
+
+</section>
+
+
+<section class="card news-card">
+
+<div class="news-title">
+
+<span class="nhk-badge">
+NHK NEWS
+</span>
+
+最新ニュース
+
+<span class="news-status" id="newsStatus"></span>
+
+</div>
+
+<div class="news-view" id="newsView">
+
+<div class="news-track" id="newsTrack"></div>
+
+<div class="news-progress" id="newsProgress"></div>
+
+</div>
+
+</section>
+
+</div>
+
+
+<script>
+
+var LATITUDE=34.78;
+var LONGITUDE=135.68;
+
+var WEEKDAYS=[
+"日",
+"月",
+"火",
+"水",
+"木",
+"金",
+"土"
+];
+
+
+function pad2(value){
+
+value=String(value);
+
+return value.length<2
+?"0"+value
+:value
+
+}
+
+
+function updateClock(){
+
+var now=new Date();
+
+document.getElementById("clockHours").innerHTML=
+pad2(now.getHours());
+
+document.getElementById("clockMinutes").innerHTML=
+pad2(now.getMinutes());
+
+document.getElementById("clockSeconds").innerHTML=
+pad2(now.getSeconds());
+
+var year=now.getFullYear();
+var month=now.getMonth()+1;
+var date=now.getDate();
+var day=WEEKDAYS[now.getDay()];
+
+document.getElementById("clockDate").innerHTML=
+year+"年"+
+month+"月"+
+date+"日("+
+day+
+")";
+
+}
+
+updateClock();
+
+setInterval(
+updateClock,
+1000
+);
+
+
+/* 天気(ニュースある方のコードの取得ロジックを踏襲・HTTP/ES5) */
+
+var ICONS={
+
+sun:
+'<svg viewBox="0 0 100 100">'+
+'<circle cx="50" cy="50" r="22" fill="#FFD34D"/>'+
+'<g stroke="#FFD34D" stroke-width="6" stroke-linecap="round">'+
+'<line x1="50" y1="6" x2="50" y2="20"/>'+
+'<line x1="50" y1="80" x2="50" y2="94"/>'+
+'<line x1="6" y1="50" x2="20" y2="50"/>'+
+'<line x1="80" y1="50" x2="94" y2="50"/>'+
+'<line x1="18" y1="18" x2="28" y2="28"/>'+
+'<line x1="72" y1="72" x2="82" y2="82"/>'+
+'<line x1="82" y1="18" x2="72" y2="28"/>'+
+'<line x1="28" y1="72" x2="18" y2="82"/>'+
+'</g></svg>',
+
+moon:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M62 12a38 38 0 1 0 26 62 30 30 0 0 1-26-62z" fill="#F1F3F8"/>'+
+'</svg>',
+
+cloud:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M28 68a20 20 0 0 1-2-40 26 26 0 0 1 50-8 22 22 0 0 1-4 48H28z" fill="#E7ECF2"/>'+
+'</svg>',
+
+cloudSun:
+'<svg viewBox="0 0 100 100">'+
+'<circle cx="68" cy="30" r="16" fill="#FFD34D"/>'+
+'<path d="M22 70a18 18 0 0 1-2-36 24 24 0 0 1 45-8 20 20 0 0 1-4 44H22z" fill="#E7ECF2"/>'+
+'</svg>',
+
+rain:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M26 56a18 18 0 0 1-2-36 24 24 0 0 1 45-7 20 20 0 0 1-4 43H26z" fill="#C7D2DE"/>'+
+'<g stroke="#7FB3F5" stroke-width="6" stroke-linecap="round">'+
+'<line x1="34" y1="74" x2="30" y2="90"/>'+
+'<line x1="52" y1="74" x2="48" y2="90"/>'+
+'<line x1="70" y1="74" x2="66" y2="90"/>'+
+'</g></svg>',
+
+snow:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M26 56a18 18 0 0 1-2-36 24 24 0 0 1 45-7 20 20 0 0 1-4 43H26z" fill="#D7E3EE"/>'+
+'<g fill="#EAF3FC">'+
+'<circle cx="34" cy="80" r="4"/>'+
+'<circle cx="52" cy="86" r="4"/>'+
+'<circle cx="70" cy="80" r="4"/>'+
+'</g></svg>',
+
+thunder:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M26 54a18 18 0 0 1-2-36 24 24 0 0 1 45-6 20 20 0 0 1-4 42H26z" fill="#9FAFC2"/>'+
+'<polygon points="58,60 44,80 52,80 42,96 68,72 58,72" fill="#FFD34D"/>'+
+'</svg>',
+
+fog:
+'<svg viewBox="0 0 100 100">'+
+'<g stroke="#C7D2DE" stroke-width="7" stroke-linecap="round">'+
+'<line x1="16" y1="38" x2="84" y2="38"/>'+
+'<line x1="10" y1="54" x2="90" y2="54"/>'+
+'<line x1="16" y1="70" x2="84" y2="70"/>'+
+'</g></svg>',
+
+cloudMoon:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M64 10a26 26 0 1 0 18 43 21 21 0 0 1-18-43z" fill="#DCE4EF"/>'+
+'<path d="M22 70a18 18 0 0 1-2-36 24 24 0 0 1 45-8 20 20 0 0 1-4 44H22z" fill="#8E9CB0"/>'+
+'</svg>',
+
+cloudNight:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M28 68a20 20 0 0 1-2-40 26 26 0 0 1 50-8 22 22 0 0 1-4 48H28z" fill="#7C8AA0"/>'+
+'</svg>',
+
+rainNight:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M60 12a24 24 0 1 0 15 39 19 19 0 0 1-15-39z" fill="#C7CFDD"/>'+
+'<path d="M26 56a18 18 0 0 1-2-36 24 24 0 0 1 45-7 20 20 0 0 1-4 43H26z" fill="#8792A4"/>'+
+'<g stroke="#7FB3F5" stroke-width="6" stroke-linecap="round">'+
+'<line x1="34" y1="74" x2="30" y2="90"/>'+
+'<line x1="52" y1="74" x2="48" y2="90"/>'+
+'<line x1="70" y1="74" x2="66" y2="90"/>'+
+'</g></svg>',
+
+snowNight:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M60 12a24 24 0 1 0 15 39 19 19 0 0 1-15-39z" fill="#D7DEEA"/>'+
+'<path d="M26 56a18 18 0 0 1-2-36 24 24 0 0 1 45-7 20 20 0 0 1-4 43H26z" fill="#9AA6BA"/>'+
+'<g fill="#EAF3FC">'+
+'<circle cx="34" cy="80" r="4"/>'+
+'<circle cx="52" cy="86" r="4"/>'+
+'<circle cx="70" cy="80" r="4"/>'+
+'</g></svg>',
+
+thunderNight:
+'<svg viewBox="0 0 100 100">'+
+'<path d="M60 10a24 24 0 1 0 15 39 19 19 0 0 1-15-39z" fill="#B4BECF"/>'+
+'<path d="M26 54a18 18 0 0 1-2-36 24 24 0 0 1 45-6 20 20 0 0 1-4 42H26z" fill="#6B7690"/>'+
+'<polygon points="58,60 44,80 52,80 42,96 68,72 58,72" fill="#FFD34D"/>'+
+'</svg>',
+
+fogNight:
+'<svg viewBox="0 0 100 100">'+
+'<g stroke="#8792A4" stroke-width="7" stroke-linecap="round">'+
+'<line x1="16" y1="38" x2="84" y2="38"/>'+
+'<line x1="10" y1="54" x2="90" y2="54"/>'+
+'<line x1="16" y1="70" x2="84" y2="70"/>'+
+'</g></svg>'
+
+};
+
+
+function getWeatherInfo(code,isDay){
+
+code=Number(code);
+
+var day=isDay?true:false;
+
+if(code===0){
+
+return{
+icon:day?ICONS.sun:ICONS.moon,
+desc:"快晴",
+bg:day
+?"linear-gradient(165deg,#6fb1f0 0%,#3a7fd6 55%,#2e63b0 100%)"
+:"linear-gradient(165deg,#14213d 0%,#0b1530 60%,#060a1a 100%)"
+};
+
+}
+
+if(code===1||code===2){
+
+return{
+icon:ICONS.cloudSun,
+desc:"一部くもり",
+bg:day
+?"linear-gradient(165deg,#7db8e8 0%,#4d84c4 55%,#3a6aa3 100%)"
+:"linear-gradient(165deg,#262f45 0%,#171d30 60%,#10141f 100%)"
+};
+
+}
+
+if(code===3){
+
+return{
+icon:ICONS.cloud,
+desc:"くもり",
+bg:day
+?"linear-gradient(165deg,#8b98a6 0%,#6b7786 55%,#545e6b 100%)"
+:"linear-gradient(165deg,#3c4553 0%,#282e39 60%,#181c24 100%)"
+};
+
+}
+
+if(code===45||code===48){
+
+return{
+icon:ICONS.fog,
+desc:"霧",
+bg:day
+?"linear-gradient(165deg,#9aa5b1 0%,#7c8794 55%,#636d78 100%)"
+:"linear-gradient(165deg,#454e5a 0%,#2f3640 60%,#1c2129 100%)"
+};
+
+}
+
+if(
+(code>=51&&code<=67)||
+(code>=80&&code<=82)
+){
+
+return{
+icon:ICONS.rain,
+desc:code>=80?"にわか雨":"雨",
+bg:day
+?"linear-gradient(165deg,#5b7186 0%,#3d5163 55%,#2b3a49 100%)"
+:"linear-gradient(165deg,#2c3947 0%,#1c2733 60%,#101720 100%)"
+};
+
+}
+
+if(code>=71&&code<=77){
+
+return{
+icon:ICONS.snow,
+desc:"雪",
+bg:day
+?"linear-gradient(165deg,#93b3d1 0%,#6f93b8 55%,#56779c 100%)"
+:"linear-gradient(165deg,#3a4a5c 0%,#26323e 60%,#161e26 100%)"
+};
+
+}
+
+if(code>=95){
+
+return{
+icon:ICONS.thunder,
+desc:"雷雨",
+bg:day
+?"linear-gradient(165deg,#4a4f63 0%,#33374a 55%,#212433 100%)"
+:"linear-gradient(165deg,#2a2c3a 0%,#1c1e28 60%,#101119 100%)"
+};
+
+}
+
+return{
+icon:ICONS.cloud,
+desc:"不明",
+bg:"linear-gradient(165deg,#6fb1f0 0%,#3a7fd6 55%,#2e63b0 100%)"
+};
+
+}
+
+
+function getOpenMeteoURL(){
+
+return"https://api.open-meteo.com/v1/forecast"+
+"?latitude="+LATITUDE+
+"&longitude="+LONGITUDE+
+"&current="+
+"temperature_2m,"+
+"relative_humidity_2m,"+
+"apparent_temperature,"+
+"weather_code,"+
+"wind_speed_10m,"+
+"is_day"+
+"&hourly="+
+"temperature_2m,"+
+"precipitation_probability,"+
+"weather_code,"+
+"is_day"+
+"&daily="+
+"temperature_2m_max,"+
+"temperature_2m_min"+
+"&timezone=Asia%2FTokyo"+
+"&forecast_days=3"+
+"&wind_speed_unit=ms"+
+"&_="+new Date().getTime();
+
+}
+
+
+function getJMAOpenMeteoURL(){
+
+return"https://api.open-meteo.com/v1/forecast"+
+"?latitude="+LATITUDE+
+"&longitude="+LONGITUDE+
+"&models=jma_seamless"+
+"&current="+
+"temperature_2m,"+
+"relative_humidity_2m,"+
+"apparent_temperature,"+
+"weather_code,"+
+"wind_speed_10m,"+
+"is_day"+
+"&hourly="+
+"temperature_2m,"+
+"relative_humidity_2m,"+
+"weather_code,"+
+"wind_speed_10m,"+
+"precipitation_probability,"+
+"is_day"+
+"&daily="+
+"temperature_2m_max,"+
+"temperature_2m_min"+
+"&timezone=Asia%2FTokyo"+
+"&forecast_days=3"+
+"&wind_speed_unit=ms"+
+"&_="+new Date().getTime();
+
+}
+
+
+function requestWeather(
+url,
+success,
+failure
+){
+
+var xhr=new XMLHttpRequest();
+
+xhr.open(
+"GET",
+url,
+true
+);
+
+try{
+xhr.timeout=15000;
+}catch(e){}
+
+xhr.onreadystatechange=function(){
+
+if(xhr.readyState!==4)
+return;
+
+if(xhr.status>=200&&xhr.status<300){
+
+try{
+
+var data=
+JSON.parse(
+xhr.responseText
+);
+
+if(
+data&&
+data.hourly&&
+data.hourly.time
+)
+
+success(data);
+
+else
+failure();
+
+}catch(e){
+failure();
+}
+
+}else{
+failure();
+}
+
+};
+
+xhr.onerror=function(){
+failure();
+};
+
+xhr.ontimeout=function(){
+failure();
+};
+
+try{
+xhr.send(null);
+}catch(e){
+failure();
+}
+
+}
+
+
+var cachedHourly=null;
+var cachedHasRainProbability=false;
+var lastForecastHourKey="";
+
+
+/* iOS9のWebView等ではfile://やアプリ内表示からの
+XMLHttpRequestによるクロスオリジン通信がブロックされ、
+天気だけ表示されないことがある。NHKニュースと同じ
+<script>タグ経由(JSONP)の取得方法を天気にも用意して
+XHRが失敗した場合の保険にする。 */
+
+var weatherJSONPNumber=0;
+
+function requestWeatherJSONP(
+targetUrl,
+success,
+failure
+){
+
+weatherJSONPNumber++;
+
+var callbackName=
+"weatherJSONPCallback_"+
+new Date().getTime()+
+"_"+weatherJSONPNumber;
+
+var script=
+document.createElement(
+"script"
+);
+
+var finished=false;
+var timer=null;
+
+
+function cleanup(){
+
+try{
+
+if(script.parentNode)
+
+script.parentNode.removeChild(
+script
+);
+
+}catch(e){}
+
+try{
+
+delete window[callbackName];
+
+}catch(e){
+
+window[callbackName]=null;
+
+}
+
+}
+
+
+window[callbackName]=
+function(data){
+
+if(finished)
+return;
+
+finished=true;
+
+if(timer!==null)
+clearTimeout(timer);
+
+try{
+
+var parsed=null;
+
+if(
+data&&
+typeof data.contents==="string"
+)
+
+parsed=
+JSON.parse(
+data.contents
+);
+
+if(
+parsed&&
+parsed.hourly&&
+parsed.hourly.time
+)
+
+success(
+parsed
+);
+
+else
+failure();
+
+}catch(e){
+
+failure();
+
+}
+
+cleanup();
+
+};
+
+
+script.onerror=
+function(){
+
+if(finished)
+return;
+
+finished=true;
+
+if(timer!==null)
+clearTimeout(timer);
+
+failure();
+
+cleanup();
+
+};
+
+
+script.src=
+"https://api.allorigins.win/get"+
+"?url="+
+encodeURIComponent(
+targetUrl
+)+
+"&callback="+
+callbackName;
+
+document.getElementsByTagName(
+"head"
+)[0].appendChild(
+script
+);
+
+timer=
+setTimeout(
+function(){
+
+if(finished)
+return;
+
+finished=true;
+
+failure();
+
+cleanup();
+
+},
+20000
+);
+
+}
+
+
+function loadWeather(){
+
+requestWeather(
+
+getOpenMeteoURL(),
+
+function(data){
+applyWeather(data,true);
+},
+
+function(){
+
+requestWeather(
+
+getJMAOpenMeteoURL(),
+
+function(data){
+applyWeather(data,true);
+},
+
+function(){
+
+/* XHRが両方失敗 → JSONP方式で再挑戦(iOS9などのXHR制限対策) */
+
+requestWeatherJSONP(
+
+getOpenMeteoURL(),
+
+function(data){
+applyWeather(data,true);
+},
+
+function(){
+
+requestWeatherJSONP(
+
+getJMAOpenMeteoURL(),
+
+function(data){
+applyWeather(data,true);
+},
+
+function(){
+showWeatherError();
+}
+
+);
+
+}
+
+);
+
+}
+
+);
+
+}
+
+);
+
+}
+
+
+function applyWeather(
+data,
+hasRainProbability
+){
+
+var current=data.current||null;
+var hourly=data.hourly;
+var daily=data.daily||null;
+var now=new Date();
+
+var currentIndex=
+findCurrentHourIndex(
+hourly.time,
+now
+);
+
+if(!current&&currentIndex>=0){
+
+current={
+
+temperature_2m:
+hourly.temperature_2m[currentIndex],
+
+weather_code:
+hourly.weather_code[currentIndex],
+
+is_day:
+getIsDayFromHour(
+now.getHours()
+)?1:0
+
+};
+
+}
+
+if(!current){
+
+showWeatherError();
+return;
+
+}
+
+var code=
+Number(
+current.weather_code
+);
+
+var isDay=
+current.is_day!==null&&
+typeof current.is_day!=="undefined"
+?
+Number(
+current.is_day
+)
+:
+(
+getIsDayFromHour(
+now.getHours()
+)?1:0
+);
+
+var info=
+getWeatherInfo(
+code,
+isDay
+);
+
+var temperature=
+Math.round(
+Number(
+current.temperature_2m
+)
+);
+
+var max="--";
+var min="--";
+
+if(
+daily&&
+daily.temperature_2m_max&&
+daily.temperature_2m_max.length
+)
+
+max=
+Math.round(
+Number(
+daily.temperature_2m_max[0]
+)
+);
+
+if(
+daily&&
+daily.temperature_2m_min&&
+daily.temperature_2m_min.length
+)
+
+min=
+Math.round(
+Number(
+daily.temperature_2m_min[0]
+)
+);
+
+document.getElementById(
+"weatherIconWrap"
+).innerHTML=
+info.icon;
+
+document.getElementById(
+"weatherConditionSmall"
+).innerHTML=
+info.desc;
+
+document.getElementById(
+"weatherTemp"
+).innerHTML=
+temperature+
+"°";
+
+document.getElementById(
+"weatherHigh"
+).innerHTML=
+max+
+"°";
+
+document.getElementById(
+"weatherLow"
+).innerHTML=
+min+
+"°";
+
+document.getElementById(
+"weatherHumidity"
+).innerHTML=
+current.relative_humidity_2m!==null&&
+typeof current.relative_humidity_2m!=="undefined"
+?
+Math.round(
+Number(
+current.relative_humidity_2m
+)
+)+"%"
+:
+"--%";
+
+document.getElementById(
+"weatherFeels"
+).innerHTML=
+current.apparent_temperature!==null&&
+typeof current.apparent_temperature!=="undefined"
+?
+Math.round(
+Number(
+current.apparent_temperature
+)
+)+"°"
+:
+"--°";
+
+document.getElementById(
+"weatherPanel"
+).style.background=
+info.bg;
+
+clearWeatherError();
+
+updateWeatherTime();
+
+cachedHourly=hourly;
+cachedHasRainProbability=
+hasRainProbability;
+
+renderHourly(
+hourly,
+hasRainProbability
+);
+
+}
+
+
+function findCurrentHourIndex(
+times,
+now
+){
+
+var best=-1;
+var bestDiff=999999999999;
+var i;
+
+for(
+i=0;
+i<times.length;
+i++
+){
+
+var t=
+parseISOTime(
+times[i]
+);
+
+var diff=
+Math.abs(
+t.getTime()-
+now.getTime()
+);
+
+if(diff<bestDiff){
+
+bestDiff=diff;
+best=i;
+
+}
+
+}
+
+return best;
+
+}
+
+
+function parseISOTime(value){
+
+var match=
+String(value).match(
+/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
+);
+
+if(!match)
+return new Date(value);
+
+return new Date(
+Number(match[1]),
+Number(match[2])-1,
+Number(match[3]),
+Number(match[4]),
+Number(match[5]),
+0,
+0
+);
+
+}
+
+
+function getIsDayFromHour(hour){
+
+return hour>=6&&hour<18;
+
+}
+
+
+function getForecastHourKey(date){
+
+return date.getFullYear()+
+"-"+
+pad2(date.getMonth()+1)+
+"-"+
+pad2(date.getDate())+
+"-"+
+pad2(date.getHours());
+
+}
+
+
+function renderHourly(
+hourly,
+hasRainProbability
+){
+
+var container=
+document.getElementById(
+"hourlyWeather"
+);
+
+container.innerHTML="";
+
+var now=new Date();
+
+var nextHour=
+new Date(
+now.getTime()
+);
+
+nextHour.setMinutes(
+0,
+0,
+0
+);
+
+nextHour.setHours(
+nextHour.getHours()+1
+);
+
+lastForecastHourKey=
+getForecastHourKey(
+now
+);
+
+var startIndex=-1;
+var i;
+
+for(
+i=0;
+i<hourly.time.length;
+i++
+){
+
+var t=
+parseISOTime(
+hourly.time[i]
+);
+
+if(
+t.getTime()>=
+nextHour.getTime()
+){
+
+startIndex=i;
+break;
+
+}
+
+}
+
+if(startIndex<0)
+return;
+
+
+for(
+i=startIndex;
+i<startIndex+6&&
+i<hourly.time.length;
+i++
+){
+
+var time=
+parseISOTime(
+hourly.time[i]
+);
+
+var hour=
+time.getHours();
+
+var temp=
+hourly.temperature_2m&&
+hourly.temperature_2m[i]!==null
+?
+Math.round(
+Number(
+hourly.temperature_2m[i]
+)
+)
+:
+"--";
+
+var rain="--";
+
+if(
+hasRainProbability&&
+hourly.precipitation_probability&&
+hourly.precipitation_probability[i]!==null&&
+typeof hourly.precipitation_probability[i]!=="undefined"
+)
+
+rain=
+Math.round(
+Number(
+hourly.precipitation_probability[i]
+)
+);
+
+var code=
+hourly.weather_code&&
+hourly.weather_code[i]!==null
+?
+Number(
+hourly.weather_code[i]
+)
+:
+3;
+
+var isDay=
+getIsDayFromHour(
+hour
+);
+
+var hourInfo=
+getWeatherInfo(
+code,
+isDay?1:0
+);
+
+var item=
+document.createElement(
+"div"
+);
+
+item.className="hour";
+
+var rainHTML="";
+
+if(
+hasRainProbability&&
+hourly.precipitation_probability&&
+hourly.precipitation_probability.length
+)
+
+rainHTML=
+'<div class="hour-rain">'+
+rain+
+'%'+
+'</div>';
+
+item.innerHTML=
+'<div class="hour-time">'+
+pad2(hour)+
+'時'+
+'</div>'+
+'<div class="hour-icon">'+
+hourInfo.icon+
+'</div>'+
+'<div class="hour-temp">'+
+temp+
+'°'+
+'</div>'+
+rainHTML;
+
+container.appendChild(
+item
+);
+
+}
+
+}
+
+
+function updateWeatherTime(){
+
+var now=new Date();
+
+document.getElementById(
+"weatherUpdated"
+).innerHTML=
+"更新 "+
+pad2(now.getHours())+
+":"+
+pad2(now.getMinutes());
+
+}
+
+
+function showWeatherError(){
+
+document.getElementById(
+"weatherConditionSmall"
+).innerHTML=
+"取得できません";
+
+document.getElementById(
+"weatherError"
+).innerHTML=
+"天気データを取得できません";
+
+document.getElementById(
+"weatherError"
+).className=
+"weather-error show";
+
+}
+
+
+function clearWeatherError(){
+
+var el=
+document.getElementById(
+"weatherError"
+);
+
+if(el)
+el.className="weather-error";
+
+}
+
+
+function checkForecastHourChange(){
+
+if(!cachedHourly)
+return;
+
+var now=new Date();
+
+var key=
+getForecastHourKey(
+now
+);
+
+if(
+key!==lastForecastHourKey
+)
+
+renderHourly(
+cachedHourly,
+cachedHasRainProbability
+);
+
+}
+
+
+var NHK_RSS=
+"https://news.web.nhk/n-data/conf/na/rss/cat0.xml";
+
+var RSS2JSON=
+"https://api.rss2json.com/v1/api.json";
+
+
+function escapeHTML(text){
+
+if(
+text===null||
+typeof text==="undefined"
+)
+
+return"";
+
+return String(text)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+
+function stripHTML(text){
+
+var temp=
+document.createElement(
+"div"
+);
+
+temp.innerHTML=
+text||"";
+
+return(
+temp.textContent||
+temp.innerText||
+""
+).replace(
+/^\s+|\s+$/g,
+""
+);
+
+}
+
+
+function formatNewsTime(value){
+
+if(!value)
+return"--:--";
+
+/* rss2jsonはpubDateを"YYYY-MM-DD HH:MM:SS"(UTC)形式で返す。
+ブラウザのDate()文字列パースは実装依存(特にiOS9系WebKitは解釈が異なることがある)ため、
+数値を直接読み取ってUTC基準で計算し、+9時間してJSTにする。これで全端末で結果が揃う。 */
+
+var match=
+String(value).match(
+/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/
+);
+
+if(match){
+
+var utcMs=
+Date.UTC(
+Number(match[1]),
+Number(match[2])-1,
+Number(match[3]),
+Number(match[4]),
+Number(match[5]),
+Number(match[6])
+);
+
+var jst=
+new Date(
+utcMs+9*60*60*1000
+);
+
+return(
+pad2(
+jst.getUTCHours()
+)+
+":"+
+pad2(
+jst.getUTCMinutes()
+)
+);
+
+}
+
+var hhmm=
+String(value).match(
+/(\d{1,2}):(\d{2})/
+);
+
+if(hhmm)
+
+return(
+pad2(
+Number(
+hhmm[1]
+)
+)+
+":"+
+hhmm[2]
+);
+
+return"--:--";
+
+}
+
+
+var newsCallbackNumber=0;
+
+
+function fetchNHKNews(callback){
+
+newsCallbackNumber++;
+
+var callbackName=
+"nhkNewsCallback_"+
+new Date().getTime()+
+"_"+newsCallbackNumber;
+
+var script=
+document.createElement(
+"script"
+);
+
+var finished=false;
+var timer=null;
+
+window[callbackName]=
+function(data){
+
+if(finished)
+return;
+
+finished=true;
+
+if(timer!==null)
+clearTimeout(timer);
+
+try{
+
+if(
+data&&
+data.status==="ok"&&
+data.items&&
+data.items.length
+)
+
+callback(
+data.items
+);
+
+else
+callback(null);
+
+}catch(e){
+
+callback(null);
+
+}
+
+cleanup();
+
+};
+
+
+function cleanup(){
+
+try{
+
+if(script.parentNode)
+
+script.parentNode.removeChild(
+script
+);
+
+}catch(e){}
+
+try{
+
+delete window[callbackName];
+
+}catch(e){
+
+window[callbackName]=null;
+
+}
+
+}
+
+
+script.onerror=
+function(){
+
+if(finished)
+return;
+
+finished=true;
+
+if(timer!==null)
+clearTimeout(timer);
+
+callback(null);
+
+cleanup();
+
+};
+
+
+script.src=
+RSS2JSON+
+"?rss_url="+
+encodeURIComponent(
+NHK_RSS
+)+
+"&count=10"+
+"&callback="+
+callbackName+
+"&_="+
+new Date().getTime();
+
+document.getElementsByTagName(
+"head"
+)[0].appendChild(
+script
+);
+
+timer=
+setTimeout(
+function(){
+
+if(finished)
+return;
+
+finished=true;
+
+callback(null);
+
+cleanup();
+
+},
+20000
+);
+
+}
+
+
+var newsIndex=0;
+var newsTimer=null;
+
+
+function stopNewsRotation(){
+
+if(newsTimer!==null){
+
+clearInterval(
+newsTimer
+);
+
+newsTimer=null;
+
+}
+
+}
+
+
+function updateNewsPosition(){
+
+var track=
+document.getElementById(
+"newsTrack"
+);
+
+if(!track)
+return;
+
+track.style.transform=
+"translateX(-"+
+(
+newsIndex*100
+)+
+"%)";
+
+var dots=
+document.getElementsByClassName(
+"news-dot"
+);
+
+var i;
+
+for(
+i=0;
+i<dots.length;
+i++
+){
+
+dots[i].className=
+i===newsIndex
+?
+"news-dot active"
+:
+"news-dot";
+
+}
+
+}
+
+
+function startNewsRotation(
+count
+){
+
+stopNewsRotation();
+
+if(count<=1)
+return;
+
+newsTimer=
+setInterval(
+function(){
+
+newsIndex++;
+
+if(newsIndex>=count)
+newsIndex=0;
+
+updateNewsPosition();
+
+},
+15000
+);
+
+}
+
+
+function createNewsDots(
+count
+){
+
+var progress=
+document.getElementById(
+"newsProgress"
+);
+
+progress.innerHTML="";
+
+var i;
+
+for(
+i=0;
+i<count;
+i++
+){
+
+var dot=
+document.createElement(
+"span"
+);
+
+dot.className=
+i===0
+?
+"news-dot active"
+:
+"news-dot";
+
+progress.appendChild(
+dot
+);
+
+}
+
+}
+
+
+function loadNews(){
+
+var track=
+document.getElementById(
+"newsTrack"
+);
+
+var status=
+document.getElementById(
+"newsStatus"
+);
+
+fetchNHKNews(
+function(news){
+
+if(
+!news||
+!news.length
+){
+
+status.innerHTML=
+"更新失敗";
+
+return;
+
+}
+
+var sorted=
+news.slice();
+
+sorted.sort(
+function(a,b){
+
+return(
+new Date(
+b.pubDate||0
+).getTime()-
+new Date(
+a.pubDate||0
+).getTime()
+);
+
+}
+);
+
+var latest=
+sorted.slice(
+0,
+6
+);
+
+track.innerHTML="";
+
+var i;
+
+for(
+i=0;
+i<latest.length;
+i++
+){
+
+var article=
+latest[i];
+
+var item=
+document.createElement(
+"article"
+);
+
+item.className=
+"news-item";
+
+var description=
+stripHTML(
+article.description||
+article.content||
+""
+);
+
+var link=
+article.link||
+"https://www3.nhk.or.jp/news/";
+
+item.innerHTML=
+'<a href="'+
+escapeHTML(
+link
+)+
+'" target="_blank">'+
+
+'<div class="news-item-title">'+
+escapeHTML(
+article.title||
+"ニュース"
+)+
+'</div>'+
+
+'<div class="news-description">'+
+escapeHTML(
+description
+)+
+'</div>'+
+
+'<div class="news-time">'+
+formatNewsTime(
+article.pubDate
+)+
+' 発</div>'+
+
+'</a>';
+
+track.appendChild(
+item
+);
+
+}
+
+newsIndex=0;
+
+createNewsDots(
+latest.length
+);
+
+updateNewsPosition();
+
+startNewsRotation(
+latest.length
+);
+
+status.innerHTML=
+"NHK・"+
+latest.length+
+"件";
+
+}
+);
+
+}
+
+
+loadWeather();
+loadNews();
+
+
+function scheduleTenMinuteWeatherUpdate(){
+
+var now=new Date();
+
+var minute=
+now.getMinutes();
+
+var second=
+now.getSeconds();
+
+var ms=
+now.getMilliseconds();
+
+var next=
+(
+Math.floor(
+minute/10
+)+1
+)*10%60;
+
+var delay;
+
+if(next===0)
+
+delay=
+(
+(60-minute)*60000
+)-
+(second*1000)-
+ms;
+
+else
+
+delay=
+(
+(next-minute)*60000
+)-
+(second*1000)-
+ms;
+
+if(delay<1000)
+delay=1000;
+
+setTimeout(
+function(){
+
+loadWeather();
+loadNews();
+
+scheduleTenMinuteWeatherUpdate();
+
+},
+delay
+);
+
+}
+
+
+scheduleTenMinuteWeatherUpdate();
+
+setInterval(
+checkForecastHourChange,
+30000
+);
+
+
+document.addEventListener(
+"visibilitychange",
+function(){
+
+if(
+document.visibilityState===
+"visible"
+){
+
+loadWeather();
+loadNews();
+
+}
+
+}
+
+);
+
+</script>
+
+</body>
+</html>
