@@ -868,230 +868,80 @@ success,
 failure
 ){
 
+/* iOS 8 Safari向け通信フォールバック */
+var triedProxy=false;
+
+function doRequest(targetUrl){
+
 var xhr=new XMLHttpRequest();
 
-xhr.open(
-"GET",
-url,
-true
-);
-
 try{
-xhr.timeout=15000;
-}catch(e){}
+xhr.open("GET",targetUrl,true);
+}catch(e){
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
+return;
+}
+
+try{xhr.timeout=15000;}catch(e){}
 
 xhr.onreadystatechange=function(){
-
-if(xhr.readyState!==4)
-return;
+if(xhr.readyState!==4)return;
 
 if(xhr.status>=200&&xhr.status<300){
-
 try{
-
-var data=
-JSON.parse(
-xhr.responseText
-);
-
-if(
-data&&
-data.hourly&&
-data.hourly.time
-)
-
+var data=JSON.parse(xhr.responseText);
+if(data&&data.hourly&&data.hourly.time){
 success(data);
-
-else
-failure();
-
+}else if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
 }catch(e){
-failure();
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
 }
-
 }else{
-failure();
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
 }
-
 };
 
 xhr.onerror=function(){
-failure();
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
 };
 
 xhr.ontimeout=function(){
-failure();
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
 };
 
-try{
-xhr.send(null);
-}catch(e){
-failure();
+try{xhr.send(null);}catch(e){
+if(!triedProxy){
+triedProxy=true;
+doRequest("https://api.cors.syrins.tech/?url="+encodeURIComponent(url));
+}else{failure();}
+}
 }
 
-}
+doRequest(url);
 
+}
 
 var cachedHourly=null;
 var cachedHasRainProbability=false;
 var lastForecastHourKey="";
-
-
-/* iOS9のWebView等ではfile://やアプリ内表示からの
-XMLHttpRequestによるクロスオリジン通信がブロックされ、
-天気だけ表示されないことがある。NHKニュースと同じ
-<script>タグ経由(JSONP)の取得方法を天気にも用意して
-XHRが失敗した場合の保険にする。 */
-
-var weatherJSONPNumber=0;
-
-function requestWeatherJSONP(
-targetUrl,
-success,
-failure
-){
-
-weatherJSONPNumber++;
-
-var callbackName=
-"weatherJSONPCallback_"+
-new Date().getTime()+
-"_"+weatherJSONPNumber;
-
-var script=
-document.createElement(
-"script"
-);
-
-var finished=false;
-var timer=null;
-
-
-function cleanup(){
-
-try{
-
-if(script.parentNode)
-
-script.parentNode.removeChild(
-script
-);
-
-}catch(e){}
-
-try{
-
-delete window[callbackName];
-
-}catch(e){
-
-window[callbackName]=null;
-
-}
-
-}
-
-
-window[callbackName]=
-function(data){
-
-if(finished)
-return;
-
-finished=true;
-
-if(timer!==null)
-clearTimeout(timer);
-
-try{
-
-var parsed=null;
-
-if(
-data&&
-typeof data.contents==="string"
-)
-
-parsed=
-JSON.parse(
-data.contents
-);
-
-if(
-parsed&&
-parsed.hourly&&
-parsed.hourly.time
-)
-
-success(
-parsed
-);
-
-else
-failure();
-
-}catch(e){
-
-failure();
-
-}
-
-cleanup();
-
-};
-
-
-script.onerror=
-function(){
-
-if(finished)
-return;
-
-finished=true;
-
-if(timer!==null)
-clearTimeout(timer);
-
-failure();
-
-cleanup();
-
-};
-
-
-script.src=
-"https://api.allorigins.win/get"+
-"?url="+
-encodeURIComponent(
-targetUrl
-)+
-"&callback="+
-callbackName;
-
-document.getElementsByTagName(
-"head"
-)[0].appendChild(
-script
-);
-
-timer=
-setTimeout(
-function(){
-
-if(finished)
-return;
-
-finished=true;
-
-failure();
-
-cleanup();
-
-},
-20000
-);
-
-}
 
 
 function loadWeather(){
@@ -1115,37 +965,7 @@ applyWeather(data,true);
 },
 
 function(){
-
-/* XHRが両方失敗 → JSONP方式で再挑戦(iOS9などのXHR制限対策) */
-
-requestWeatherJSONP(
-
-getOpenMeteoURL(),
-
-function(data){
-applyWeather(data,true);
-},
-
-function(){
-
-requestWeatherJSONP(
-
-getJMAOpenMeteoURL(),
-
-function(data){
-applyWeather(data,true);
-},
-
-function(){
 showWeatherError();
-}
-
-);
-
-}
-
-);
-
 }
 
 );
@@ -1717,62 +1537,49 @@ function formatNewsTime(value){
 if(!value)
 return"--:--";
 
-/* rss2jsonはpubDateを"YYYY-MM-DD HH:MM:SS"(UTC)形式で返す。
-ブラウザのDate()文字列パースは実装依存(特にiOS9系WebKitは解釈が異なることがある)ため、
-数値を直接読み取ってUTC基準で計算し、+9時間してJSTにする。これで全端末で結果が揃う。 */
+var date=
+new Date(
+value
+);
+
+date.setHours(date.getHours() + 9);
+
+if(
+isNaN(
+date.getTime()
+)
+){
 
 var match=
-String(value).match(
-/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/
-);
-
-if(match){
-
-var utcMs=
-Date.UTC(
-Number(match[1]),
-Number(match[2])-1,
-Number(match[3]),
-Number(match[4]),
-Number(match[5]),
-Number(match[6])
-);
-
-var jst=
-new Date(
-utcMs+9*60*60*1000
-);
-
-return(
-pad2(
-jst.getUTCHours()
-)+
-":"+
-pad2(
-jst.getUTCMinutes()
-)
-);
-
-}
-
-var hhmm=
 String(value).match(
 /(\d{1,2}):(\d{2})/
 );
 
-if(hhmm)
+if(match)
 
 return(
 pad2(
 Number(
-hhmm[1]
+match[1]
 )
 )+
 ":"+
-hhmm[2]
+match[2]
 );
 
 return"--:--";
+
+}
+
+return(
+pad2(
+date.getHours()
+)+
+":"+
+pad2(
+date.getMinutes()
+)
+);
 
 }
 
